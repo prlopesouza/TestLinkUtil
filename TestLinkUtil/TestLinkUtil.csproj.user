@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <StartArguments>-o teste.txt -s "C:\Program Files %28x86%29\Jenkins\agent\workspace\AutoZ Partial\Taps" -u http://127.0.0.1:81/testlink/lib/api/xmlrpc/v1/xmlrpc.php -k 10cbc3572531d71ee30ed19e23e89850 -pj AutoZ_Teste -pl "AZ TestPlan" -a TapResults -cf PluginCF</StartArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <StartArguments>-o teste.txt -s "C:\Program Files %28x86%29\Jenkins\agent\workspace\AutoZ Partial\Taps" -u http://127.0.0.1:81/testlink/lib/api/xmlrpc/v1/xmlrpc.php -k 10cbc3572531d71ee30ed19e23e89850 -pj AutoZ_Teste -pl "AZ TestPlan" -a TapResults -cf PluginCF</StartArguments>
+  </PropertyGroup>
+</Project>
