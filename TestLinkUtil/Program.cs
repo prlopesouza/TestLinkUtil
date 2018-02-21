@@ -103,7 +103,7 @@ namespace TestLinkUtil
             switch (action)
             {
                 case "GetTestCasesMSTest":
-                    getTestCasesMSTest();
+                    getTestCasesMSTest(customFieldName);
                     break;
                 case "TapResults":
                     setTapResults(tapResults(seekPath), customFieldName);
@@ -363,16 +363,24 @@ namespace TestLinkUtil
             return results;
         }
 
-        private static void getTestCasesMSTest()
+        private static void getTestCasesMSTest(String cfName)
         {
             String testPlanId = getTestPlanByName(testProjectName, testPlanName);
 
             List<Dictionary<string, string>> testCases = getTestCasesForTestPlan(testPlanId);
 
+            String referenceField = "name";
+
+            if (!cfName.Equals(""))
+            {
+                testCases = addCustomField(testCases, cfName);
+                referenceField = cfName;
+            }
+
             String tcString = "TESTCASES=";
             foreach (Dictionary<string, string> tc in testCases)
             {
-                tcString += " /test:" + tc["name"];
+                    tcString += " /test:" + tc[referenceField];
             }
 
             FileStream fs = File.Open(fileOut, FileMode.Create);
