@@ -22,6 +22,7 @@ namespace TestLinkUtil
 
         private static String fileOut = "";
         private static String customFieldName = "";
+        private static String[] customFieldNames = { };
 
         static void Main(string[] args)
         {
@@ -35,42 +36,55 @@ namespace TestLinkUtil
             //String testProjectName = args[0];
             //String testPlanName = args[1];
             //String fileOut = args[2];
+
+            //WORKSPACE set by Jenkins
             workSpace = Environment.GetEnvironmentVariable("WORKSPACE");
 
             int i = 0;
             while (i < args.Length) {
                 switch (args[i])
                 {
-                    case "-o":
+                    case "-o": //out file path/name to be used in actions that have a file output
                         fileOut = args[i + 1];
                         i += 2;
                         break;
-                    case "-u":
+                    case "-u": //specify TestLink URL
+                               //default readed from hudson.plugins.testlink.TestLinkBuilder.xml in the agent folder root 
                         url = args[i + 1];
                         i += 2;
                         break;
-                    case "-k":
+                    case "-k": //specify TestLink DevKey
+                               //default readed from hudson.plugins.testlink.TestLinkBuilder.xml in the agent folder root 
                         devKey = args[i + 1];
                         i += 2;
                         break;
-                    case "-pj":
+                    case "-pj": //specify TestLink Project Name
+                                //default set by TestLink Jenkins plugin on TESTLINK_TESTPROJECT_NAME
                         testProjectName = args[i + 1];
                         i += 2;
                         break;
-                    case "-pl":
+                    case "-pl": //specify TestLink Test Plan Name 
+                                //default set by TestLink Jenkins plugin on TESTLINK_TESTPLAN_NAME
                         testPlanName = args[i + 1];
                         i += 2;
                         break;
-                    case "-a":
+                    case "-a": //specify the actions to be taken
+                        //GetTestCasesMSTest: Get TestCase names from TestPlan and set to output file in the format: "TESTCASES= /test:<TCName>"
+                        //      Use the names from the CustomField passed by parameter or the TCName if CF parameter = ""
+                        //TapResults: read all .tap files from seekPath (-s) and report the results to testlink, also uploading attachments
+                        //SaveCustomFields: save all the specified custom fields (-cf) values from all the TC in the TestPlan to the output file. One line for each TC, values separated by ","
                         action = args[i + 1];
                         i += 2;
                         break;
-                    case "-s":
+                    case "-s": //specify the path where to seek results or other files
                         seekPath = args[i + 1];
                         i += 2;
                         break;
-                    case "-cf":
-                        customFieldName = args[i + 1];
+                    case "-cf": //specify TestLink Custom Field Names separated by ","
+                                //  the correspondence with each TC is always made using the first CFName specified
+                        string cf = args[i + 1];
+                        customFieldNames = cf.Split(',');
+                        customFieldName = customFieldNames[0];
                         i += 2;
                         break;
                     default:
@@ -108,11 +122,41 @@ namespace TestLinkUtil
                 case "TapResults":
                     setTapResults(tapResults(seekPath), customFieldName);
                     break;
+                case "SaveCustomFields":
+                    saveCustomFields(customFieldNames);
+                    break;
                 default:
                     break;
             }
 
 
+        }
+
+        private static void saveCustomFields(String[] customFields)
+        {
+            String testPlanId = getTestPlanByName(testProjectName, testPlanName);
+
+            List<Dictionary<string, string>> testCases = getTestCasesForTestPlan(testPlanId);
+
+            foreach (string cf in customFields)
+            {
+                testCases = addCustomField(testCases, cf);
+            }
+
+            FileStream fs = File.Open(fileOut, FileMode.Create);
+            StreamWriter sw = new StreamWriter(fs);
+            
+            foreach (Dictionary<string, string> tc in testCases)
+            {
+                string line = tc["name"];
+                foreach (string cf in customFields)
+                {
+                    line = line + "," + tc[cf];
+                }
+                sw.WriteLine(line);
+            }
+            
+            sw.Close();
         }
 
         private static void setTapResults(List<Dictionary<string, object>> testCasesResults, string cfName)
