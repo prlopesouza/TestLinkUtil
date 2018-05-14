@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.IO;
+using MimeTypes;
 
 namespace TestLinkUtil
 {
@@ -23,6 +24,8 @@ namespace TestLinkUtil
         private static String fileOut = "";
         private static String customFieldName = "";
         private static String[] customFieldNames = { };
+        private static String filePath = "";
+        private static String testCaseName = "";
 
         static void Main(string[] args)
         {
@@ -73,6 +76,7 @@ namespace TestLinkUtil
                         //      Use the names from the CustomField passed by parameter or the TCName if CF parameter = ""
                         //TapResults: read all .tap files from seekPath (-s) and report the results to testlink, also uploading attachments
                         //SaveCustomFields: save all the specified custom fields (-cf) values from all the TC in the TestPlan to the output file. One line for each TC, values separated by ","
+                        //UploadAttachment: upload 
                         action = args[i + 1];
                         i += 2;
                         break;
@@ -85,6 +89,14 @@ namespace TestLinkUtil
                         string cf = args[i + 1];
                         customFieldNames = cf.Split(',');
                         customFieldName = customFieldNames[0];
+                        i += 2;
+                        break;
+                    case "-f": //file name/path to be used as input of some actions, like uploadAttachment
+                        filePath = args[i + 1];
+                        i += 2;
+                        break;
+                    case "-tc": //testcase name to be used as input of some actions, like uploadAttachment
+                        testCaseName = args[i + 1];
                         i += 2;
                         break;
                     default:
@@ -125,11 +137,41 @@ namespace TestLinkUtil
                 case "SaveCustomFields":
                     saveCustomFields(customFieldNames);
                     break;
+                case "UploadAttachment":
+                    uploadAttachment(filePath, testCaseName, customFieldName);
+                    break;
                 default:
                     break;
             }
+        }
 
+        private static void uploadAttachment(string filePath, string tcName, string cfName="")
+        {
+            String testPlanId = getTestPlanByName(testProjectName, testPlanName);
+            Dictionary<string, string> build = getLatestBuildForTestPlan(testPlanId);
 
+            String tcId = "";
+
+            if (cfName != "")
+            {
+                List<Dictionary<string, string>> testCases = getTestCasesForTestPlan(testPlanId);
+                testCases = addCustomField(testCases, cfName);
+
+                Dictionary<string, string> tc = testCases.Find(t => t[cfName].ToString() == tcName);
+
+                tcId = tc["id"];
+            }
+            else
+            {
+                tcId = getTestCaseIDByName(tcName);
+            }
+
+            String tcExecId = getTestCaseExecutionId(testPlanId, tcId, build["id"]);
+
+            String mimeType = MimeTypeMap.GetMimeType(Path.GetExtension(filePath));
+            String fileName = Path.GetFileName(filePath);
+
+            uploadExecutionAttachment(tcExecId, mimeType, fileName, fileName, Path.GetFullPath(filePath));
         }
 
         private static void saveCustomFields(String[] customFields)
@@ -161,9 +203,9 @@ namespace TestLinkUtil
 
         private static void setTapResults(List<Dictionary<string, object>> testCasesResults, string cfName)
         {
-            Dictionary<string, string> build = getLatestBuildForTestPlan(getTestPlanByName(testProjectName, testPlanName));
-
             String testPlanId = getTestPlanByName(testProjectName, testPlanName);
+
+            Dictionary<string, string> build = getLatestBuildForTestPlan(testPlanId);
 
             List<Dictionary<string, string>> testCases = getTestCasesForTestPlan(testPlanId);
 
@@ -458,6 +500,42 @@ namespace TestLinkUtil
             }
 
             return true;
+        }
+
+        private static string getTestCaseExecutionId(string testPlanId, string testCaseId, string buildId)
+        {
+            String content = "<?xml version=\"1.0\" encoding=\"UTF - 8\"?><methodCall xmlns:ex=\"http://ws.apache.org/xmlrpc/namespaces/extensions\"><methodName>tl.getTestCasesForTestPlan</methodName><params><param><value><struct><member><name>testcaseid</name><value>" +
+                testCaseId +
+                "</value></member><member><name>devKey</name><value>" +
+                devKey +
+                "</value></member><member><name>keywordid</name><value><ex:nil/></value></member><member><name>keywords</name><value><ex:nil/></value></member><member><name>getstepsinfo</name><value><boolean>1</boolean></value></member><member><name>executiontype</name><value>2</value></member><member><name>testplanid</name><value><i4>" +
+                testPlanId +
+                "</i4></value></member><member><name>buildid</name><value>" +
+                buildId +
+                "</value></member><member><name>executed</name><value><ex:nil/></value></member><member><name>details</name><value>full</value></member><member><name>executestatus</name><value><ex:nil/></value></member><member><name>assignedto</name><value><ex:nil/></value></member></struct></value></param></params></methodCall>";
+            String responseString = client.UploadString(url, content);
+
+            Regex rx = new Regex("<name>exec_id<\\/name><value><string>(\\d+)<\\/string>");
+            Match m = rx.Match(responseString);
+
+            return m.Groups[1].Value;
+        }
+
+        private static string getTestCaseIDByName(string testCaseName)
+        {
+            String content = "<?xml version=\"1.0\" encoding=\"UTF - 8\"?><methodCall xmlns:ex=\"http://ws.apache.org/xmlrpc/namespaces/extensions\"><methodName>tl.getTestCaseIDByName</methodName><params><param><value><struct><member><name>devKey</name><value>" +
+                devKey +
+                "</value></member><member><name>testcasename</name><value>" +
+                testCaseName +
+                "</value></member><member><name>testsuitename</name><value><ex:nil/></value></member><member><name>testprojectname</name><value>" +
+                testProjectName +
+                "</value></member><member><name>testcasepathname</name><value><ex:nil/></value></member></struct></value></param></params></methodCall>";
+            String responseString = client.UploadString(url, content);
+
+            Regex rx = new Regex("<name>id<\\/name><value><string>(\\d+)<\\/string>");
+            Match m = rx.Match(responseString);
+
+            return m.Groups[1].Value;
         }
 
         private static List<Dictionary<string, string>> getTestCasesForTestPlan(string testPlanId)

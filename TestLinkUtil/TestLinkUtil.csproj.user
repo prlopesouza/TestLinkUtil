@@ -1,9 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>-o teste.txt -s "C:\Program Files %28x86%29\Jenkins\agent\workspace\AutoZ Partial\Taps" -u http://127.0.0.1:81/testlink/lib/api/xmlrpc/v1/xmlrpc.php -k 10cbc3572531d71ee30ed19e23e89850 -pj AutoZ_Teste -pl "AZ TestPlan" -a TapResults -cf PluginCF</StartArguments>
+    <StartArguments>-u http://127.0.0.1:81/testlink/lib/api/xmlrpc/v1/xmlrpc.php -k 10cbc3572531d71ee30ed19e23e89850 -pj RanorexPilot -pl "Plan2" -a UploadAttachment -cf TestMethod -f "C:\Program Files %28x86%29\Jenkins\agent\workspace\RanorexPilot\RanorexTest1\RanorexTest1\bin\Debug\GoogleSearch1_120180509_055511.rxlog" -tc GoogleSearch1</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <StartArguments>-o teste.txt -s "C:\Program Files %28x86%29\Jenkins\agent\workspace\AutoZ Partial\Taps" -u http://127.0.0.1:81/testlink/lib/api/xmlrpc/v1/xmlrpc.php -k 10cbc3572531d71ee30ed19e23e89850 -pj AutoZ_Teste -pl "AZ TestPlan" -a TapResults -cf PluginCF</StartArguments>
+    <StartArguments>-u http://127.0.0.1:81/testlink/lib/api/xmlrpc/v1/xmlrpc.php -k 10cbc3572531d71ee30ed19e23e89850 -pj RanorexPilot -pl "Plan2" -a UploadAttachment -cf TestMethod -f "C:\Program Files %28x86%29\Jenkins\agent\workspace\RanorexPilot\RanorexTest1\RanorexTest1\bin\Debug\GoogleSearch1_120180509_055510.rxlog" -tc GoogleSearch1</StartArguments>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ProjectView>ShowAllFiles</ProjectView>
   </PropertyGroup>
 </Project>
