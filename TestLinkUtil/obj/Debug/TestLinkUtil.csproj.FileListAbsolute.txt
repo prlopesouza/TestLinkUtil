@@ -4,3 +4,4 @@ C:\Users\Paulo\source\repos\TestLinkUtil\TestLinkUtil\bin\Debug\TestLinkUtil.pdb
 C:\Users\Paulo\source\repos\TestLinkUtil\TestLinkUtil\obj\Debug\TestLinkUtil.csproj.CoreCompileInputs.cache
 C:\Users\Paulo\source\repos\TestLinkUtil\TestLinkUtil\obj\Debug\TestLinkUtil.exe
 C:\Users\Paulo\source\repos\TestLinkUtil\TestLinkUtil\obj\Debug\TestLinkUtil.pdb
+C:\Users\Paulo\source\repos\TestLinkUtil\TestLinkUtil\obj\Debug\TestLinkUtil.csprojResolveAssemblyReference.cache

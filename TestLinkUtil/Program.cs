@@ -180,6 +180,8 @@ namespace TestLinkUtil
 
             List<Dictionary<string, string>> testCases = getTestCasesForTestPlan(testPlanId);
 
+            testCases = testCases.OrderBy(k => k["order"]).ToList();
+
             foreach (string cf in customFields)
             {
                 testCases = addCustomField(testCases, cf);
@@ -547,7 +549,7 @@ namespace TestLinkUtil
                 "</i4></value></member><member><name>buildid</name><value><ex:nil/></value></member><member><name>executed</name><value><ex:nil/></value></member><member><name>details</name><value>full</value></member><member><name>executestatus</name><value><ex:nil/></value></member><member><name>assignedto</name><value><ex:nil/></value></member></struct></value></param></params></methodCall>";
             String responseString = client.UploadString(url, content);
 
-            Regex rx = new Regex("tcase_name<\\/name><value><string>([^<]+)<\\/string>[\\s\\S]+?tcase_id<\\/name><value><string>([^<]+)<\\/string>");
+            Regex rx = new Regex("tcase_name<\\/name><value><string>([^<]+)<\\/string>[\\s\\S]+?tcase_id<\\/name><value><string>([^<]+)<\\/string>[\\s\\S]+?execution_order<\\/name><value><string>([^<]+)<\\/string>");
             MatchCollection mc = rx.Matches(responseString);
 
             List<Dictionary<string, string>> tc = new List<Dictionary<string, string>>();
@@ -557,6 +559,7 @@ namespace TestLinkUtil
                 Dictionary<string, string> t = new Dictionary<string, string>();
                 t.Add("name", m.Groups[1].Value);
                 t.Add("id", m.Groups[2].Value);
+                t.Add("order", m.Groups[3].Value);
                 tc.Add(t);
             }
 
