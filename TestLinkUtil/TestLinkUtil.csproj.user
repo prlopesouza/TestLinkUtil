@@ -7,6 +7,6 @@
     <StartArguments>-u http://127.0.0.1:81/testlink/lib/api/xmlrpc/v1/xmlrpc.php -k 10cbc3572531d71ee30ed19e23e89850 -pj RanorexPilot -pl "Plan2" -a SaveCustomFields -cf TestMethod,TestSolution -o Teste.txt</StartArguments>
   </PropertyGroup>
   <PropertyGroup>
-    <ProjectView>ShowAllFiles</ProjectView>
+    <ProjectView>ProjectFiles</ProjectView>
   </PropertyGroup>
 </Project>

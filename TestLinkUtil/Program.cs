@@ -29,6 +29,7 @@ namespace TestLinkUtil
 
         static void Main(string[] args)
         {
+            //Console.WriteLine("TESTLINKUTIL");
             String seekPath = "";
             //url = "http://127.0.0.1:81/testlink/lib/api/xmlrpc/v1/xmlrpc.php"; 
             //devKey = "10cbc3572531d71ee30ed19e23e89850";
@@ -42,7 +43,11 @@ namespace TestLinkUtil
 
             //WORKSPACE set by Jenkins
             workSpace = Environment.GetEnvironmentVariable("WORKSPACE");
-
+            if (workSpace=="" || workSpace==null)
+            {
+                workSpace = Directory.GetCurrentDirectory();
+            }
+            //Console.WriteLine("WS = " + workSpace);
             int i = 0;
             while (i < args.Length) {
                 switch (args[i])
@@ -111,6 +116,7 @@ namespace TestLinkUtil
                 {
                     if (!getTestLinkInstall(workSpace + "\\..\\..\\..\\hudson.plugins.testlink.TestLinkBuilder.xml"))
                     {
+                        Console.WriteLine("No TestLink installation found!");
                         return;
                     }
                 }
@@ -130,6 +136,9 @@ namespace TestLinkUtil
             {
                 case "GetTestCasesMSTest":
                     getTestCasesMSTest(customFieldName);
+                    break;
+                case "GetTestCasesVSTest":
+                    getTestCasesVSTest(customFieldName);
                     break;
                 case "TapResults":
                     setTapResults(tapResults(seekPath), customFieldName);
@@ -205,12 +214,14 @@ namespace TestLinkUtil
 
         private static void setTapResults(List<Dictionary<string, object>> testCasesResults, string cfName)
         {
+            //Console.WriteLine("setTapResults");
+
             String testPlanId = getTestPlanByName(testProjectName, testPlanName);
 
             Dictionary<string, string> build = getLatestBuildForTestPlan(testPlanId);
 
             List<Dictionary<string, string>> testCases = getTestCasesForTestPlan(testPlanId);
-
+            
             testCases = addCustomField(testCases, cfName);
 
             foreach (Dictionary<string, string> tc in testCases)
@@ -232,8 +243,12 @@ namespace TestLinkUtil
 
         private static void uploadExecutionAttachment(string execId, string type, string name, string description, string path)
         {
+            //Console.WriteLine("uploadExecutionAttachment");
+            //Console.WriteLine("UPLOAD: Execid="+execId+", type="+type+", name="+name+", desc="+description+", path=\""+path+"\"");
+
             byte[] fileContent = File.ReadAllBytes(path);
-            String base64 = Convert.ToBase64String(fileContent);
+            //fileContent = Encoding.UTF8.GetBytes(Encoding.UTF8.GetChars(fileContent));
+            String base64 = Convert.ToBase64String(fileContent, Base64FormattingOptions.None);
 
             client.Headers.Add("Content-Type", "text/xml");
 
@@ -253,11 +268,29 @@ namespace TestLinkUtil
                 base64 +
                 "</value></member><member><name>platformid</name><value><ex:nil/></value></member><member><name>customfields</name><value><ex:nil/></value></member><member><name>platformname</name><value><ex:nil/></value></member>" +
                 "<member><name>fktable</name><value>executions</value></member></struct></value></param></params></methodCall>";
-            byte[] responseString = client.UploadData(url, Encoding.UTF8.GetBytes(content));
+
+            //FileStream f = File.Create(name + ".txt");
+            //byte[] b = Encoding.UTF8.GetBytes(content);
+            //f.Write(b, 0, b.Length);
+            //f.Close();
+
+            try
+            {
+                byte[] responseString = client.UploadData(url, Encoding.UTF8.GetBytes(content));
+                //Console.WriteLine("RESPONSE: " + Encoding.UTF8.GetString(responseString));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Erro no upload do arquivo: " + name);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
         }
 
         private static string reportTCResult(string id, Dictionary<string, object> tcR, string testPlanId, Dictionary<string, string> build)
         {
+            //Console.WriteLine("reportTCResult");
+
             String content = "<?xml version=\"1.0\" encoding=\"UTF - 8\"?><methodCall xmlns:ex=\"http://ws.apache.org/xmlrpc/namespaces/extensions\"><methodName>tl.reportTCResult</methodName><params><param><value><struct><member><name>devKey</name><value>" +
                 devKey +
                 "</value></member><member><name>testplanid</name><value>" +
@@ -276,14 +309,18 @@ namespace TestLinkUtil
                 "<member><name>bugid</name><value><ex:nil/></value></member><member><name>guess</name><value><ex:nil/></value></member><member><name>testcaseexternalid</name><value><ex:nil/></value></member><member><name>overwrite</name><value><ex:nil/></value></member></struct></value></param></params></methodCall>";
             String responseString = client.UploadString(url, content);
 
-            Regex rx = new Regex("<name>id<\\/name><value><int>([^<]+)<\\/int>");
+            Regex rx = new Regex("<name>id<\\/name><value><(?:int|string)>([^<]+)<\\/(?:int|string)>");
             Match m = rx.Match(responseString);
+
+            //Console.WriteLine("RESPONSE: " + responseString);
 
             return m.Groups[1].Value;
         }
 
         private static List<Dictionary<string, string>> addCustomField(List<Dictionary<string, string>> testCases, string cfName)
         {
+            //Console.WriteLine("addCustomField");
+
             String projectId = getTestProjectByName(testProjectName);
 
             foreach (Dictionary<string, string> tc in testCases)
@@ -331,6 +368,8 @@ namespace TestLinkUtil
 
         private static List<Dictionary<string, object>> tapResults(String path)
         {
+            //Console.WriteLine("tapResults");
+
             if (workSpace != null && !Directory.Exists(path))
             {
                 path = workSpace + "\\" + path;
@@ -434,6 +473,8 @@ namespace TestLinkUtil
 
         private static Dictionary<string, string> getLatestBuildForTestPlan(String testPlanId)
         {
+            //Console.WriteLine("getLatestBuildForTestPlan");
+
             String content = "<?xml version=\"1.0\" encoding=\"UTF - 8\"?><methodCall xmlns:ex=\"http://ws.apache.org/xmlrpc/namespaces/extensions\"><methodName>tl.getLatestBuildForTestPlan</methodName><params><param><value><struct><member><name>devKey</name><value>" +
                 devKey +
                 "</value></member><member><name>testplanid</name><value><i4>" +
@@ -447,6 +488,9 @@ namespace TestLinkUtil
             results.Add("id", rx.Match(responseString).Groups[1].Value);
             rx = new Regex("<name>name<\\/name><value><string>([^<]+)<\\/string>");
             results.Add("name", rx.Match(responseString).Groups[1].Value);
+
+            //Console.WriteLine("ID = " + results["id"] + ", NAME = " + results["name"]);
+            //Console.WriteLine("RESPONSE: " + responseString);
 
             return results;
         }
@@ -477,8 +521,37 @@ namespace TestLinkUtil
             sw.Close();
         }
 
+        private static void getTestCasesVSTest(String cfName)
+        {
+            String testPlanId = getTestPlanByName(testProjectName, testPlanName);
+
+            List<Dictionary<string, string>> testCases = getTestCasesForTestPlan(testPlanId);
+
+            String referenceField = "name";
+
+            if (!cfName.Equals(""))
+            {
+                testCases = addCustomField(testCases, cfName);
+                referenceField = cfName;
+            }
+
+            String tcString = "TESTCASES=";
+            foreach (Dictionary<string, string> tc in testCases)
+            {
+                tcString += tc[referenceField] + ",";
+            }
+            tcString = tcString.Remove(tcString.Length - 1);
+
+            FileStream fs = File.Open(fileOut, FileMode.Create);
+            StreamWriter sw = new StreamWriter(fs);
+            sw.Write(tcString);
+            sw.Close();
+        }
+
         private static bool getTestLinkInstall(string file)
         {
+            //Console.WriteLine("getTestLinkInstall");
+
             if (!File.Exists(file))
             {
                 return false;
@@ -542,6 +615,8 @@ namespace TestLinkUtil
 
         private static List<Dictionary<string, string>> getTestCasesForTestPlan(string testPlanId)
         {
+            //Console.WriteLine("getTestCasesForTestPlan");
+
             String content = "<?xml version=\"1.0\" encoding=\"UTF - 8\"?><methodCall xmlns:ex=\"http://ws.apache.org/xmlrpc/namespaces/extensions\"><methodName>tl.getTestCasesForTestPlan</methodName><params><param><value><struct><member><name>testcaseid</name><value><ex:nil/></value></member><member><name>devKey</name><value>" +
                 devKey +
                 "</value></member><member><name>keywordid</name><value><ex:nil/></value></member><member><name>keywords</name><value><ex:nil/></value></member><member><name>getstepsinfo</name><value><boolean>1</boolean></value></member><member><name>executiontype</name><value>2</value></member><member><name>testplanid</name><value><i4>" +
@@ -568,6 +643,8 @@ namespace TestLinkUtil
 
         private static string getTestPlanByName(string testProjectName, string testPlanName)
         {
+            //Console.WriteLine("getTestPlanByName");
+
             String content = "<?xml version=\"1.0\" encoding=\"UTF - 8\"?><methodCall xmlns:ex=\"http://ws.apache.org/xmlrpc/namespaces/extensions\"><methodName>tl.getTestPlanByName</methodName><params><param><value><struct><member><name>devKey</name><value>" +
                 devKey + 
                 "</value></member><member><name>testplanname</name><value>" +
